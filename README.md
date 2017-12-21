@@ -5,17 +5,31 @@
 # 安装
 
 ```shell
-go get github.com/ssgo/watch
-go install github.com/ssgo/watch
+go get github.com/ssgo/gowatch
+go install github.com/ssgo/gowatch
 ```
-
 
 
 # Usage
 
 ```shell
-watch [ -p path ] [ -t ] [ -b | -bench name ] [ packages ] [ gofiles... ]
-	-p	指定监视的路径，默认为 ./
-	-t	执行测试用例 默认执行 go test ./tests，未指定时将运行 go run *.go
-	-b	执行性能测试，默认执行所有，如需单独指定请使用 -bench name
+gowatch [-p paths] [-t] [-b] [...]
+-p	指定监视的路径，默认为 ./，支持逗号隔开的多个路径
+-r	执行当前目录中的程序，相当于 go run *.go
+-t	执行tests目录中的测试用例，相当于 go test ./tests
+-b	执行性能测试，相当于 go -bench .*，需要额外指定 -t 或 test 参数
+...	可以使用所有 go 命令的参数
+```
+
+# Samples:
+
+```shell
+gowatch -r
+gowatch -t
+gowatch -t -b
+gowatch -p ../ -t
+gowatch run start.go
+gowatch run samePackages start.go
+gowatch test
+gowatch test ./testcase
 ```
