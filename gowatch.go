@@ -51,9 +51,9 @@ func main() {
 		basePaths = append(basePaths, "./")
 	}
 
-	os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
-	fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36mgo %s\033[0m]\n\n", strings.Join(basePaths, " "), strings.Join(cmdArgs, " "))
-	runCommand("go", cmdArgs...)
+	//os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
+	//fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36mgo %s\033[0m]\n\n", strings.Join(basePaths, " "), strings.Join(cmdArgs, " "))
+	//runCommand("go", cmdArgs...)
 
 	changed := make(chan bool)
 	go func(changed chan bool) {
@@ -79,7 +79,7 @@ func main() {
 		case <-changed:
 			os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
 			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36mgo %s\033[0m]\n\n", strings.Join(basePaths, " "), strings.Join(cmdArgs, " "))
-			runCommand("go", cmdArgs...)
+			go runCommand("go", cmdArgs...)
 		}
 	}
 }
@@ -105,8 +105,14 @@ func printUsage() {
 	fmt.Println("")
 }
 
+var lastCmd *exec.Cmd = nil
 func runCommand(command string, args ...string) {
+	if lastCmd != nil{
+		lastCmd.Process.Kill()
+	}
+
 	cmd := exec.Command(command, args...)
+	lastCmd = cmd
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Println(err)
@@ -176,7 +182,7 @@ func watchPath(path string) {
 				continue
 			}
 			if filesModTime[path+file.Name()] == 0 {
-				filesModTime[path+file.Name()] = file.ModTime().Unix()
+				filesModTime[path+file.Name()] = 1
 			}
 		}
 	}
