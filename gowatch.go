@@ -14,6 +14,7 @@ import (
 var filesModTime = make(map[string]int64)
 
 func main() {
+	fmt.Println(">>", len(os.Args))
 	if len(os.Args) == 1 {
 		printUsage()
 		return
@@ -37,7 +38,15 @@ func main() {
 				basePaths = append(basePaths, path)
 			}
 		case "-r":
-			cmdArgs = append(cmdArgs, "run", "*.go")
+			cmdArgs = append(cmdArgs, "run")
+			files, err := ioutil.ReadDir("./")
+			if err == nil {
+				for _, file := range files {
+					if !strings.HasPrefix(file.Name(), ".") && !strings.HasSuffix(file.Name(), "_test.go") && strings.HasSuffix(file.Name(), ".go") {
+						cmdArgs = append(cmdArgs, "./"+file.Name())
+					}
+				}
+			}
 		case "-t":
 			cmdArgs = append(cmdArgs, "test", "./tests")
 		case "-b":
@@ -106,8 +115,9 @@ func printUsage() {
 }
 
 var lastCmd *exec.Cmd = nil
+
 func runCommand(command string, args ...string) {
-	if lastCmd != nil{
+	if lastCmd != nil {
 		lastCmd.Process.Kill()
 	}
 
