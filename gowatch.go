@@ -9,6 +9,8 @@ import (
 	"bufio"
 	"io"
 	"strings"
+	"syscall"
+	"os/signal"
 )
 
 var filesModTime = make(map[string]int64)
@@ -56,6 +58,18 @@ func main() {
 		}
 	}
 
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		if lastCmd != nil {
+			fmt.Println("killing ", lastCmd.Process.Pid)
+			syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+		}
+		fmt.Println("\nExit")
+		os.Exit(0)
+	}()
+
 	if len(basePaths) == 0 {
 		basePaths = append(basePaths, "./")
 	}
@@ -68,6 +82,10 @@ func main() {
 	go func(changed chan bool) {
 		for {
 			if watchFiles() {
+				if lastCmd != nil {
+					fmt.Println("killing ", lastCmd.Process.Pid)
+					syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+				}
 				changed <- true
 			}
 			time.Sleep(time.Millisecond * 100)
@@ -88,7 +106,7 @@ func main() {
 		case <-changed:
 			os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
 			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36mgo %s\033[0m]\n\n", strings.Join(basePaths, " "), strings.Join(cmdArgs, " "))
-			go runCommand("go", cmdArgs...)
+			runCommand("go", cmdArgs...)
 		}
 	}
 }
@@ -117,11 +135,8 @@ func printUsage() {
 var lastCmd *exec.Cmd = nil
 
 func runCommand(command string, args ...string) {
-	if lastCmd != nil {
-		lastCmd.Process.Kill()
-	}
-
 	cmd := exec.Command(command, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	lastCmd = cmd
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
