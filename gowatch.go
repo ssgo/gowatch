@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"bufio"
 	"io"
 	"strings"
 	"syscall"
 	"os/signal"
+	"bufio"
 )
 
 var filesModTime = make(map[string]int64)
 
 func main() {
-	fmt.Println(">>", len(os.Args))
 	if len(os.Args) == 1 {
 		printUsage()
 		return
@@ -144,15 +143,20 @@ func runCommand(command string, args ...string) {
 		return
 	}
 	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	cmd.Start()
-	reader := bufio.NewReader(io.MultiReader(stdout, stderr))
+	reader := bufio.NewReader( io.MultiReader(stdout, stderr) )
 	for {
-		line, err2 := reader.ReadString('\n')
+		lineBuf, _, err2 := reader.ReadLine()
+
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
-		line = strings.TrimRight(line, "\n")
+		line := strings.TrimRight(string(lineBuf), "\r\n")
 		if strings.HasPrefix(line, "ok ") {
 			fmt.Println("\033[42m", line, "\033[0m")
 		} else if strings.HasPrefix(line, "FAIL	") {
