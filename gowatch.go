@@ -22,6 +22,7 @@ func main() {
 	}
 
 	basePaths := make([]string, 0)
+	cmd := "go"
 	cmdArgs := make([]string, 0)
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
@@ -37,6 +38,13 @@ func main() {
 					path += "/"
 				}
 				basePaths = append(basePaths, path)
+			}
+		case "-sh":
+			if i < len(os.Args)-1 && os.Args[i+1][0] != '-'{
+				i++
+				cmd = os.Args[i]
+			}else{
+				cmd = "sh"
 			}
 		case "-r":
 			cmdArgs = append(cmdArgs, "run")
@@ -104,8 +112,8 @@ func main() {
 		select {
 		case <-changed:
 			os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
-			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36mgo %s\033[0m]\n\n", strings.Join(basePaths, " "), strings.Join(cmdArgs, " "))
-			runCommand("go", cmdArgs...)
+			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36m%s %s\033[0m]\n\n", strings.Join(basePaths, " "), cmd, strings.Join(cmdArgs, " "))
+			runCommand(cmd, cmdArgs...)
 		}
 	}
 }
@@ -114,6 +122,7 @@ func printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("	gowatch \033[37m[-p paths] [-t] [-b] [...]\033[0m")
 	fmt.Println("	\033[36m-p\033[0m	\033[37m指定监视的路径，默认为 ./，支持逗号隔开的多个路径\033[0m")
+	fmt.Println("	\033[36m-sh\033[0m	\033[37m指定执行的命令，默认为 go\033[0m")
 	fmt.Println("	\033[36m-r\033[0m	\033[37m执行当前目录中的程序，相当于 go run *.go\033[0m")
 	fmt.Println("	\033[36m-t\033[0m	\033[37m执行tests目录中的测试用例，相当于 go test ./tests\033[0m")
 	fmt.Println("	\033[36m-b\033[0m	\033[37m执行性能测试，相当于 go -bench .*，需要额外指定 -t 或 test 参数\033[0m")
