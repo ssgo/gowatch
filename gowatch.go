@@ -1,16 +1,16 @@
 package main
 
 import (
-	"time"
-	"io/ioutil"
+	"bufio"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io"
+	"os/signal"
 	"strings"
 	"syscall"
-	"os/signal"
-	"bufio"
+	"time"
 )
 
 var filesModTime = make(map[string]int64)
@@ -40,10 +40,10 @@ func main() {
 				basePaths = append(basePaths, path)
 			}
 		case "-sh":
-			if i < len(os.Args)-1 && os.Args[i+1][0] != '-'{
+			if i < len(os.Args)-1 && os.Args[i+1][0] != '-' {
 				i++
 				cmd = os.Args[i]
-			}else{
+			} else {
 				cmd = "sh"
 			}
 		case "-r":
@@ -158,7 +158,7 @@ func runCommand(command string, args ...string) {
 	}
 
 	cmd.Start()
-	reader := bufio.NewReader( io.MultiReader(stdout, stderr) )
+	reader := bufio.NewReader(io.MultiReader(stdout, stderr))
 	for {
 		lineBuf, _, err2 := reader.ReadLine()
 
