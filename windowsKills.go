@@ -40,10 +40,6 @@ var (
 	procCloseHandle              = modkernel32.NewProc("CloseHandle")
 )
 
-func SetPgid(pid, pgid int) error {
-	return nil
-}
-
 func KillAll(pid int) error {
 	pids := Getppids(uint32(pid))
 	Kill(pids)
