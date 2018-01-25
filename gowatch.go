@@ -69,10 +69,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		if lastCmd != nil {
-			fmt.Println("killing ", lastCmd.Process.Pid)
-			syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
-		}
+		stop()
 		fmt.Println("\nExit")
 		os.Exit(0)
 	}()
@@ -89,10 +86,7 @@ func main() {
 	go func(changed chan bool) {
 		for {
 			if watchFiles() {
-				if lastCmd != nil {
-					fmt.Println("killing ", lastCmd.Process.Pid)
-					syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
-				}
+				stop()
 				changed <- true
 			}
 			time.Sleep(time.Millisecond * 100)
@@ -113,7 +107,25 @@ func main() {
 		case <-changed:
 			os.Stdout.WriteString("\x1b[3;J\x1b[H\x1b[2J")
 			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36m%s %s\033[0m]\n\n", strings.Join(basePaths, " "), cmd, strings.Join(cmdArgs, " "))
-			runCommand(cmd, cmdArgs...)
+
+			runPos := -1
+			for i, arg := range cmdArgs{
+				if arg == "run"{
+					runPos = i
+					break
+				}
+			}
+
+			if runPos >= 0 {
+				buildArgs := append([]string{}, cmdArgs[0:runPos]...)
+				buildArgs = append(buildArgs, "build", "-o", ".run")
+				buildArgs = append(buildArgs, cmdArgs[runPos+1:]...)
+				fmt.Printf("Building \033[36m%s %s\033[0m\n", cmd, strings.Join(buildArgs, " "))
+				runCommand(cmd, buildArgs...)
+				runCommand("./.run")
+			}else{
+				runCommand(cmd, cmdArgs...)
+			}
 		}
 	}
 }
@@ -144,7 +156,8 @@ var lastCmd *exec.Cmd = nil
 
 func runCommand(command string, args ...string) {
 	cmd := exec.Command(command, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Env = append(os.Environ(), "GOGC=off")
+	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	lastCmd = cmd
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -184,6 +197,20 @@ func runCommand(command string, args ...string) {
 	}
 
 	cmd.Wait()
+	lastCmd = nil
+}
+
+func stop() {
+	if lastCmd != nil {
+		fmt.Println("killing ", lastCmd.Process.Pid)
+		lastCmd.Process.Signal(syscall.SIGTERM)
+		lastCmd.Process.Wait()
+		//syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+	}
+	_, err := os.Stat(".run")
+	if err == nil || os.IsExist(err){
+		os.Remove(".run")
+	}
 }
 
 func watchFiles() bool {
