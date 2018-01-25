@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"runtime"
 )
 
 var filesModTime = make(map[string]int64)
@@ -203,7 +204,11 @@ func runCommand(command string, args ...string) {
 func stop() {
 	if lastCmd != nil {
 		fmt.Println("killing ", lastCmd.Process.Pid)
-		lastCmd.Process.Signal(syscall.SIGTERM)
+		if runtime.GOOS == "windows"{
+			lastCmd.Process.Kill()
+		}else {
+			lastCmd.Process.Signal(syscall.SIGTERM)
+		}
 		lastCmd.Process.Wait()
 		//syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
 	}
