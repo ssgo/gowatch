@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
-	"runtime"
 )
 
 var filesModTime = make(map[string]int64)
@@ -110,8 +110,8 @@ func main() {
 			fmt.Printf("[Watching \033[36m%s\033[0m] [Running \033[36m%s %s\033[0m]\n\n", strings.Join(basePaths, " "), cmd, strings.Join(cmdArgs, " "))
 
 			runPos := -1
-			for i, arg := range cmdArgs{
-				if arg == "run"{
+			for i, arg := range cmdArgs {
+				if arg == "run" {
 					runPos = i
 					break
 				}
@@ -124,7 +124,7 @@ func main() {
 				fmt.Printf("Building \033[36m%s %s\033[0m\n", cmd, strings.Join(buildArgs, " "))
 				runCommand(cmd, buildArgs...)
 				runCommand("./.run")
-			}else{
+			} else {
 				runCommand(cmd, cmdArgs...)
 			}
 		}
@@ -204,16 +204,16 @@ func runCommand(command string, args ...string) {
 func stop() {
 	if lastCmd != nil {
 		fmt.Println("killing ", lastCmd.Process.Pid)
-		if runtime.GOOS == "windows"{
+		if runtime.GOOS == "windows" {
 			lastCmd.Process.Kill()
-		}else {
+		} else {
 			lastCmd.Process.Signal(syscall.SIGTERM)
 		}
 		lastCmd.Process.Wait()
 		//syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
 	}
 	_, err := os.Stat(".run")
-	if err == nil || os.IsExist(err){
+	if err == nil || os.IsExist(err) {
 		os.Remove(".run")
 	}
 }
