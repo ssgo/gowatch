@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -71,7 +72,12 @@ func main() {
 		<-c
 		if lastCmd != nil {
 			fmt.Println("killing ", lastCmd.Process.Pid)
-			syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+			if runtime.GOOS == "windows" {
+				KillAll(lastCmd.Process.Pid)
+			} else {
+				//syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+			}
+
 		}
 		fmt.Println("\nExit")
 		os.Exit(0)
@@ -91,7 +97,11 @@ func main() {
 			if watchFiles() {
 				if lastCmd != nil {
 					fmt.Println("killing ", lastCmd.Process.Pid)
-					syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+					if runtime.GOOS == "windows" {
+						KillAll(lastCmd.Process.Pid)
+					} else {
+						//syscall.Kill(-lastCmd.Process.Pid, syscall.SIGKILL)
+					}
 				}
 				changed <- true
 			}
@@ -144,7 +154,12 @@ var lastCmd *exec.Cmd = nil
 
 func runCommand(command string, args ...string) {
 	cmd := exec.Command(command, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	} else {
+		//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
+
 	lastCmd = cmd
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
