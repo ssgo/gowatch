@@ -185,7 +185,7 @@ func runCommand(command string, args ...string) {
 		} else if strings.HasPrefix(line, "FAIL	") {
 			fmt.Println("\033[41m", line, "\033[0m")
 		} else if strings.Index(line, ".go:") != -1 {
-			if strings.Index(line, "/usr") != -1 {
+			if strings.Index(line, "go/src") != -1 {
 				fmt.Println(line)
 			} else {
 				fmt.Println("\033[36m", line, "\033[0m")
